@@ -1,15 +1,26 @@
+/*
+ * Nga Virtual Machine & Interface for RETRO 12
+ *
+ * Copyright (c) 2009-2011, Simon Waite
+ * Copyright (c) 2009-2017, Charles Childers
+*/
+
 using System;
 using System.IO;
 using System.Text;
+
 namespace Nga
 {
   public class VM
   {
+
     /* Registers */
-    int sp, rsp, ip, shrink;
+    int sp, rsp, ip;
     int[] data, address, memory;
+
     string request;
     static readonly int MAX_REQUEST_LENGTH = 1024;
+
     /* Opcodes recognized by the VM */
     enum OpCodes {
       VM_NOP,      VM_LIT,        VM_DUP,
@@ -31,7 +42,6 @@ namespace Nga
         {
             requestTmp[i++] = (char)memory[starting++];
         }
-        //requestTmp[i] = (char)0;
         request = new string(requestTmp);
         request = request.TrimEnd('\0');
         return request;
@@ -67,6 +77,7 @@ namespace Nga
         Environment.Exit(0);
       }
     }
+
     /* Load the 'ngaImage' into memory */
     public void loadImage() {
       int i = 0;
@@ -85,13 +96,12 @@ namespace Nga
         binReader.Close();
       }
     }
+
     /* Save the image */
     public void saveImage() {
       int i = 0, j = 1000000;
       BinaryWriter binWriter = new BinaryWriter(File.Open("ngaImage", FileMode.Create));
       try {
-        if (shrink != 0)
-          j = memory[3];
         while (i < j) { binWriter.Write(memory[i]); i++; }
       }
       catch(EndOfStreamException e) {
@@ -101,6 +111,7 @@ namespace Nga
         binWriter.Close();
       }
     }
+
     /* Read a key */
     public int read_key() {
       int a = 0;
@@ -114,6 +125,7 @@ namespace Nga
           Console.Write((char)8);
       return a;
     }
+
     /* Process the current opcode */
     public void ngaProcessOpcode(int opcode) {
       int x, y;
@@ -266,6 +278,7 @@ namespace Nga
           break;
       }
     }
+
     public int ngaValidatePackedOpcodes(int opcode) {
       int raw = opcode;
       int current;
@@ -293,9 +306,7 @@ namespace Nga
       string target;
       while (memory[i] != 0 && i != 0) {
         target = rxGetString(i + 3);
-//        Console.Write("\n@ " + i + "__" + target);
         if (name.Equals(target)) {
-//          Console.Write("\n__" + i + "__" + name + "__" + target + "__\n");
           dt = i;
           i = 0;
         } else {
@@ -331,33 +342,36 @@ public void executeFunction(int cell) {
   }
 }
 
-    /* Process the image until the IP reaches the end of memory */
     public void Execute() {
       for (ip = 0; ip < 1000000; ip++) {
          Console.Write(ip + ":" + memory[ip] + "\n");
          ngaProcessPackedOpcodes(memory[ip]);
       }
     }
+
     /* Main entry point */
     /* Calls all the other stuff and process the command line */
     public static void Main(string [] args) {
       VM vm = new VM();
-      vm.shrink = 0;
       for (int i = 0; i < args.Length; i++) {
-        if (args[i] == "--shrink")
-          vm.shrink = 1;
         if (args[i] == "--about") {
           Console.Write("Nga [VM: C#, .NET]\n\n");
           Environment.Exit(0);
         }
       }
 
+      Console.Write("RETRO 12 (rx-");
+      Console.Write(vm.memory[4] / 100);
+      Console.Write(".");
+      Console.Write(vm.memory[4] % 100);
+      Console.Write(")\n\n");
+
       while (true) {
         string input = Console.ReadLine();
         foreach (string word in input.Split(' ')) {
           if (word.Equals("bye")) Environment.Exit(0);
-          vm.ngaInjectString(word, 1471);
-          vm.pushData(1471);
+          vm.ngaInjectString(word, 1025);
+          vm.pushData(1025);
           vm.executeFunction(vm.memory[vm.d_lookup("interpret") + 1]);
         }
       }
